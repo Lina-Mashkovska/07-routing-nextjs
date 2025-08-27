@@ -1,71 +1,64 @@
-
+// lib/api/notes.ts
 import axios from "axios";
 import type { Note, NewNote } from "@/types/note";
-
-const myKey = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN ?? "";
-
-
-const api = axios.create({
-  baseURL: "https://notehub-public.goit.study/api",
-});
-
-
-api.interceptors.request.use((config) => {
-  if (myKey) {
-    config.headers = config.headers ?? {};
-    (config.headers as Record<string, string>).Authorization = `Bearer ${myKey}`;
-  }
-  return config;
-});
 
 export interface NotesResponse {
   notes: Note[];
   totalPages: number;
 }
 
-export const getNotes = async (
-  search: string,
-  page: number,
-  tag?: string
-): Promise<NotesResponse> => {
-  try {
-    const params: Record<string, string | number> = { page };
-    if (search) params.search = search;
-    if (tag) params.tag = tag;
+const BASE_URL = "https://notehub-public.goit.study/api";
+const TOKEN = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN ?? "";
 
-    const { data } = await api.get<NotesResponse>("/notes", { params });
-    return data;
-  } catch (err: any) {
-    const status = err?.response?.status;
-    const msg = err?.response?.data?.message || err?.message || "Unknown error";
-    throw new Error(`Notes request failed (${status ?? "no-status"}): ${msg}`);
+const client = axios.create({
+  baseURL: BASE_URL,
+  headers: TOKEN ? { Authorization: `Bearer ${TOKEN}` } : undefined,
+});
+
+type GetNotesArgs = {
+  page: number;
+  perPage?: number;
+  search?: string;
+  tag?: string | undefined;
+};
+
+export const getNotes = async ({
+  page,
+  perPage = 12,
+  search = "",
+  tag,
+}: GetNotesArgs): Promise<NotesResponse> => {
+  const params: Record<string, string | number> = { page, perPage };
+  if (search) params.search = search;
+
+  const isAll = typeof tag === "string" && tag.toLowerCase() === "all";
+  if (tag && !isAll) params.tag = tag;
+
+  const res = await client.get<NotesResponse>("/notes", { params });
+  if (!res.data?.notes || typeof res.data.totalPages !== "number") {
+    throw new Error("Invalid API response: missing notes or totalPages");
   }
+  return res.data;
 };
 
 export const getSingleNote = async (id: string): Promise<Note> => {
-  try {
-    const { data } = await api.get<Note>(`/notes/${id}`);
-    return data;
-  } catch (err: any) {
-    const status = err?.response?.status;
-    const msg = err?.response?.data?.message || err?.message || "Unknown error";
-    throw new Error(`Note request failed (${status ?? "no-status"}): ${msg}`);
-  }
+  const res = await client.get<Note>(`/notes/${id}`);
+  return res.data;
 };
 
-export const addNote = async (payload: NewNote): Promise<Note> => {
-  const { data } = await api.post<Note>("/notes", payload);
-  return data;
+export const createNote = async (payload: NewNote): Promise<Note> => {
+  const res = await client.post<Note>("/notes", payload);
+  return res.data;
 };
 
-export const createNote = addNote;
+export const addNote = createNote;
 
 export const deleteNote = async (noteId: string): Promise<Note> => {
-  const { data } = await api.delete<Note>(`/notes/${noteId}`);
-  return data;
+  const res = await client.delete<Note>(`/notes/${noteId}`);
+  return res.data;
 };
 
 
-export const fetchNotes = getNotes;
-export const fetchNoteById = getSingleNote;
+
+
 

@@ -1,27 +1,36 @@
-
 import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import NotesClient from "./Notes.client";
 import { getNotes } from "@/lib/api";
-import type { NoteTag } from "@/types/note";
+import { tags, type NoteTag } from "@/types/note";
 
-type PageProps = {
-  params: { slug?: string[] };
-  searchParams?: { page?: string; search?: string };
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export default async function NotesFilterPage({ params, searchParams }: PageProps) {
-  const pageStr = searchParams?.page;
-  const rawSearch = searchParams?.search;
+type PageParams = { slug?: string[] };
+type PageSearch = { page?: string; search?: string };
+
+export default async function NotesFilterPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<PageParams>;           
+  searchParams: Promise<PageSearch>;     
+}) {
+
+  const { slug } = await params;
+  const { page: pageStr, search: searchStr } = await searchParams;
 
   const page = Number(pageStr ?? 1);
-  const search = rawSearch ?? "";
+  const search = searchStr ?? "";
 
 
-  const raw = params?.slug?.[0] ?? "All";
-  const tag: NoteTag | undefined = raw === "All" ? undefined : (decodeURIComponent(raw) as NoteTag);
+  const raw = slug?.[0] ? decodeURIComponent(slug[0]) : "all";
+  const lower = raw.toLowerCase();
+  const isAll = lower === "all";
+  const matched = tags.find((t) => t.toLowerCase() === lower);
+  const tag: NoteTag | undefined = isAll ? undefined : (matched as NoteTag | undefined);
 
   const qc = new QueryClient();
-
   await qc.prefetchQuery({
     queryKey: ["notes", { page, search, tag: tag ?? null }],
     queryFn: () => getNotes({ page, search, tag }),
@@ -29,7 +38,13 @@ export default async function NotesFilterPage({ params, searchParams }: PageProp
 
   return (
     <HydrationBoundary state={dehydrate(qc)}>
-      <NotesClient initialPage={page} initialSearch={search} initialTag={tag ?? null} />
+      <NotesClient
+        initialPage={page}
+        initialSearch={search}
+        initialTag={tag ?? null}
+      />
     </HydrationBoundary>
   );
 }
+
+

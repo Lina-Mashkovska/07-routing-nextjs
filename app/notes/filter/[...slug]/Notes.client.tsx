@@ -1,4 +1,4 @@
-// app/notes/filter/[...slug]/Notes.client.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,8 +14,7 @@ import NoteList from "@/components/NoteList/NoteList";
 import Modal from "@/components/Modal/Modal";
 import NoteForm from "@/components/NoteForm/NoteForm";
 
-
-import css from "./Notes.client.module.css";
+import css from "./page.module.css";
 
 type Props = {
   initialSearch: string;
@@ -28,10 +27,10 @@ export default function NotesClient({ initialSearch, initialPage, initialTag }: 
   const router = useRouter();
   const searchParams = useSearchParams();
 
-
   const [searchQuery, setSearchQuery] = useState<string>(initialSearch ?? "");
   const [page, setPage] = useState<number>(initialPage ?? 1);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
 
   const tag = initialTag ?? undefined;
 
@@ -43,7 +42,7 @@ export default function NotesClient({ initialSearch, initialPage, initialTag }: 
     setSearchQuery(initialSearch ?? "");
   }, [initialSearch]);
 
-
+ 
   const updateSearchQuery = useDebouncedCallback((value: string) => {
     const sp = new URLSearchParams(searchParams.toString());
     if (value) sp.set("search", value);
@@ -86,7 +85,11 @@ export default function NotesClient({ initialSearch, initialPage, initialTag }: 
         <SearchBox value={searchQuery} onChange={onSearchChange} />
 
         {totalPages > 1 && (
-          <Pagination currentPage={page} totalPages={totalPages} onChange={onPageChange} />
+          <Pagination
+            currentPage={page}
+            pageCount={totalPages}          
+            onPageChange={onPageChange}     
+          />
         )}
 
         <button
@@ -114,3 +117,4 @@ export default function NotesClient({ initialSearch, initialPage, initialTag }: 
     </section>
   );
 }
+
