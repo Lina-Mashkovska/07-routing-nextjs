@@ -15,6 +15,8 @@ export default function NotePreview({ id }: Props) {
   const { data: note, isLoading, isError } = useQuery<Note>({
     queryKey: ["note", id],
     queryFn: () => getSingleNote(id),
+   
+    refetchOnMount: false,
   });
 
   return (
@@ -38,11 +40,7 @@ export default function NotePreview({ id }: Props) {
               </time>
             )}
 
-            <button
-              className={css.backBtn}
-              onClick={() => router.back()}
-              type="button"
-            >
+            <button className={css.backBtn} onClick={() => router.back()} type="button">
               ← Back
             </button>
           </div>
@@ -51,4 +49,5 @@ export default function NotePreview({ id }: Props) {
     </Modal>
   );
 }
+
 
